@@ -32,7 +32,7 @@ const LOG_SOURCE: string = "MessageAttachmentsCommandSet";
 
 export default class MessageAttachmentsCommandSet extends BaseListViewCommandSet<IMessageAttachmentsCommandSetProperties> {
   private sp: SPFI;
-  private isPanelOpen:boolean=false;
+
   public onInit(): Promise<void> {
     Log.info(LOG_SOURCE, "Initialized MessageAttachmentsCommandSet");
     this.sp = spfi().using(SPFx(this.context));
@@ -75,7 +75,7 @@ export default class MessageAttachmentsCommandSet extends BaseListViewCommandSet
 
         const element: React.ReactElement<{}> = React.createElement(
           AttachmentPanel,
-          { message: messgage,isOpen:this.isPanelOpen }
+          { message: messgage,sp:this.sp }
         );
         ReactDOM.render(element, div);
       })
