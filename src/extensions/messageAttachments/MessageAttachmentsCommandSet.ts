@@ -14,6 +14,8 @@ import "@pnp/sp/lists";
 import "@pnp/sp/items";
 import "@pnp/sp/files";
 import AttachmentPanel from "../../components/AttachmentsPanel";
+import * as React from "react";
+import * as ReactDOM from "react-dom";
 
 /**
  * If your command set uses the ClientSideComponentProperties JSON input,
@@ -30,6 +32,7 @@ const LOG_SOURCE: string = "MessageAttachmentsCommandSet";
 
 export default class MessageAttachmentsCommandSet extends BaseListViewCommandSet<IMessageAttachmentsCommandSetProperties> {
   private sp: SPFI;
+  private isPanelOpen:boolean=false;
   public onInit(): Promise<void> {
     Log.info(LOG_SOURCE, "Initialized MessageAttachmentsCommandSet");
     this.sp = spfi().using(SPFx(this.context));
@@ -43,7 +46,9 @@ export default class MessageAttachmentsCommandSet extends BaseListViewCommandSet
   public onExecute(event: IListViewCommandSetExecuteEventParameters): void {
     switch (event.itemId) {
       case "VIEW_ATTACHMENTS":
-this.viewAttachments(event).catch((e)=>{debugger;})
+        this.viewAttachments(event).catch((e) => {
+          debugger;
+        });
 
         break;
 
@@ -66,18 +71,17 @@ this.viewAttachments(event).catch((e)=>{debugger;})
           .getFileByServerRelativePath(url)
           .getBuffer();
         const messgage = new MsgReader(buffer);
-        const div = document.createElement('div');
-        let dialog: AttachmentPanel = new AttachmentPanel(messgage);
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        dialog.show();
+        const div = document.createElement("div");
 
+        const element: React.ReactElement<{}> = React.createElement(
+          AttachmentPanel,
+          { message: messgage,isOpen:this.isPanelOpen }
+        );
+        ReactDOM.render(element, div);
       })
       .catch((e) => {
         debugger;
       });
-
-
-
   }
   private _onListViewStateChanged = (
     args: ListViewStateChangedEventArgs
