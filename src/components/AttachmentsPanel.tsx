@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Panel, PanelType } from 'office-ui-fabric-react/lib/Panel';
 import { DetailsList, IColumn } from 'office-ui-fabric-react/lib/DetailsList';
+import { Link } from 'office-ui-fabric-react/lib/Link';
 import MsgReader, { FieldsData } from "@kenjiuno/msgreader";
 export interface IAttachmentPanelProps{
      message: MsgReader;
@@ -36,7 +37,18 @@ export default class AttachmentPanel extends React.Component<IAttachmentPanelPro
                 name: "fileName",
                 minWidth: 300,
                 onRender:(item?: FieldsData, index?: number, column?: IColumn) =>{ 
-                              return item.fileName
+                        //      return item.fileName
+                        return <Link   
+                        onClick={
+                            (event: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement | HTMLElement>): void=>{
+                                debugger;
+                                const file=this.props.message.getAttachment(item);
+                                console.log(file);
+
+
+
+                            }}
+                         >{item.fileName}</Link>
                 } 
             },
         {
