@@ -19,6 +19,7 @@
     "@microsoft/sp-listview-extensibility": "1.16.1",
     "@pnp/graph": "3.11.0",
     "@pnp/sp": "3.11.0",
+    "date-fns": "2.29.3",
     "react": "17.0.1",
     "react-dom": "17.0.1",
     "tslib": "2.3.1"

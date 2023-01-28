@@ -46,7 +46,8 @@ export default class MessageAttachmentsCommandSet extends BaseListViewCommandSet
   public onExecute(event: IListViewCommandSetExecuteEventParameters): void {
     switch (event.itemId) {
       case "VIEW_ATTACHMENTS":
-        this.viewAttachments(event).catch((e) => {
+        this.viewAttachments(event)
+        .catch((e) => {
           debugger;
         });
 
@@ -65,8 +66,7 @@ export default class MessageAttachmentsCommandSet extends BaseListViewCommandSet
       .items.getById(parseInt(itemId))
       .file()
       .then(async (fileInfo) => {
-        debugger;
-        const url = fileInfo.ServerRelativeUrl;
+          const url = fileInfo.ServerRelativeUrl;
         const buffer: ArrayBuffer = await this.sp.web
           .getFileByServerRelativePath(url)
           .getBuffer();
@@ -75,7 +75,7 @@ export default class MessageAttachmentsCommandSet extends BaseListViewCommandSet
 
         const element: React.ReactElement<{}> = React.createElement(
           AttachmentPanel,
-          { message: messgage,sp:this.sp }
+          { message: messgage,sp:this.sp,headerText: event.selectedRows[0].getValueByName("FileLeafRef") }
         );
         ReactDOM.render(element, div);
       })
@@ -87,7 +87,7 @@ export default class MessageAttachmentsCommandSet extends BaseListViewCommandSet
     args: ListViewStateChangedEventArgs
   ): void => {
     Log.info(LOG_SOURCE, "List view state changed");
-    debugger;
+    
     const compareOneCommand: Command = this.tryGetCommand("VIEW_ATTACHMENTS");
     if (compareOneCommand) {
       // This command should be hidden unless exactly one row is selected and its a .msg
