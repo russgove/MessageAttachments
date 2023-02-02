@@ -4,9 +4,9 @@ import * as React from 'react';
 import { Panel, PanelType } from 'office-ui-fabric-react/lib/Panel';
 import { DetailsList, IColumn } from 'office-ui-fabric-react/lib/DetailsList';
 import { TextField, } from 'office-ui-fabric-react/lib/TextField';
-import { Stack, StackItem ,IStackTokens} from 'office-ui-fabric-react/lib/Stack';
+import { Stack, StackItem, IStackTokens } from 'office-ui-fabric-react/lib/Stack';
 import { Link } from 'office-ui-fabric-react/lib/Link';
-import { PrimaryButton ,DefaultButton} from 'office-ui-fabric-react/lib/Button';
+import { PrimaryButton, DefaultButton } from 'office-ui-fabric-react/lib/Button';
 import { SPFI } from "@pnp/sp";
 import MsgReader, { FieldsData } from "@kenjiuno/msgreader";
 export interface IAttachmentPanelProps {
@@ -46,7 +46,7 @@ export default class AttachmentPanel extends React.Component<IAttachmentPanelPro
         const itemAlignmentsStackTokens: IStackTokens = {
             childrenGap: 5,
             padding: 10,
-          };
+        };
         console.dir(this.props.message.getFileData());
         const columns: IColumn[] = [
             {
@@ -106,7 +106,7 @@ export default class AttachmentPanel extends React.Component<IAttachmentPanelPro
                                 const attchment = this.props.message.getAttachment(att);
                                 const folder = await this.props.sp.web.lists.getByTitle("TemporaryEmailAttachments").rootFolder();
                                 console.log(folder);
-                                const filename=encodeURIComponent(attchment.fileName);
+                                const filename = encodeURIComponent(attchment.fileName);
                                 const addResult: IFileAddResult = await this.props.sp.web
                                     .getFolderByServerRelativePath(folder.ServerRelativeUrl)
                                     .files.addUsingPath(
@@ -114,8 +114,8 @@ export default class AttachmentPanel extends React.Component<IAttachmentPanelPro
                                 console.log(addResult);
                                 console.log(addResult.data.ServerRelativeUrl);
                                 //window.location.pathname = addResult.data.ServerRelativeUrl;
-                                const opts=`width=${window.innerWidth-100},height=${window.innerHeight-100},top=${window.screenTop+50},left=${window.screenLeft+50},toolbar=0,location=0`;
-                                window.open(addResult.data.ServerRelativeUrl,filename,opts);
+                                const opts = `width=${window.innerWidth - 100},height=${window.innerHeight - 100},top=${window.screenTop + 50},left=${window.screenLeft + 50},toolbar=0,location=0`;
+                                window.open(addResult.data.ServerRelativeUrl, filename, opts);
 
                             }}>
                             {att.fileName}
@@ -134,7 +134,8 @@ export default class AttachmentPanel extends React.Component<IAttachmentPanelPro
             type={PanelType.large}
 
         >
-    
+           
+
             <table>
                 <tbody>
                     <tr>

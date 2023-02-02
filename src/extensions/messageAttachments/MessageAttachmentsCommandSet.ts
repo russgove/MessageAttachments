@@ -13,7 +13,7 @@ import "@pnp/sp/webs";
 import "@pnp/sp/lists";
 import "@pnp/sp/items";
 import "@pnp/sp/files";
-import AttachmentPanel from "../../components/AttachmentsPanel";
+import AttachmentPanelV2 from "../../components/AttachmentsPanelV2";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 
@@ -46,8 +46,7 @@ export default class MessageAttachmentsCommandSet extends BaseListViewCommandSet
   public onExecute(event: IListViewCommandSetExecuteEventParameters): void {
     switch (event.itemId) {
       case "VIEW_ATTACHMENTS":
-        this.viewAttachments(event)
-        .catch((e) => {
+        this.viewAttachments(event).catch((e) => {
           debugger;
         });
 
@@ -66,16 +65,36 @@ export default class MessageAttachmentsCommandSet extends BaseListViewCommandSet
       .items.getById(parseInt(itemId))
       .file()
       .then(async (fileInfo) => {
-          const url = fileInfo.ServerRelativeUrl;
+        const searchParams = new URLSearchParams(window.location.href);
+        const parent = encodeURIComponent(searchParams.get("id"));
+        const viewid = searchParams.get("viewid");
+        // alert(window.location.origin+parent+viewid);
+        const frameUrl = `${window.location.origin}${
+          window.location.pathname
+        }?id=${encodeURIComponent(fileInfo.ServerRelativeUrl)
+          .split("_")
+          .join("%5F")
+          .split(".")
+          .join("%2E")}&parent=${parent}`;
+        console.log(frameUrl);
+        debugger;
+        const url = fileInfo.ServerRelativeUrl;
         const buffer: ArrayBuffer = await this.sp.web
           .getFileByServerRelativePath(url)
           .getBuffer();
+        debugger;
+    
         const messgage = new MsgReader(buffer);
         const div = document.createElement("div");
 
         const element: React.ReactElement<{}> = React.createElement(
-          AttachmentPanel,
-          { message: messgage,sp:this.sp,headerText: event.selectedRows[0].getValueByName("FileLeafRef") }
+          AttachmentPanelV2,
+          {
+            message: messgage,
+            sp: this.sp,
+            headerText: event.selectedRows[0].getValueByName("FileLeafRef"),
+            frameUrl: frameUrl,
+          }
         );
         ReactDOM.render(element, div);
       })
@@ -87,7 +106,7 @@ export default class MessageAttachmentsCommandSet extends BaseListViewCommandSet
     args: ListViewStateChangedEventArgs
   ): void => {
     Log.info(LOG_SOURCE, "List view state changed");
-    
+
     const compareOneCommand: Command = this.tryGetCommand("VIEW_ATTACHMENTS");
     if (compareOneCommand) {
       // This command should be hidden unless exactly one row is selected and its a .msg
