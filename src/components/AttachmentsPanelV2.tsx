@@ -2,18 +2,23 @@
 /* eslint-disable @microsoft/spfx/pair-react-dom-render-unmount */
 import * as React from 'react';
 import { Panel, PanelType } from 'office-ui-fabric-react/lib/Panel';
+import { BaseComponentContext } from "@microsoft/sp-component-base";
+
 import { DetailsList, IColumn } from 'office-ui-fabric-react/lib/DetailsList';
 import { TextField, } from 'office-ui-fabric-react/lib/TextField';
 import { Stack, StackItem, IStackTokens } from 'office-ui-fabric-react/lib/Stack';
 import { Link } from 'office-ui-fabric-react/lib/Link';
 import { PrimaryButton, DefaultButton } from 'office-ui-fabric-react/lib/Button';
+import { Spinner, SpinnerSize } from 'office-ui-fabric-react/lib/Spinner';
 import { SPFI } from "@pnp/sp";
 import MsgReader, { FieldsData } from "@kenjiuno/msgreader";
 export interface IAttachmentPanelV2Props {
-    message: MsgReader;
+
     sp: SPFI;
+    context: BaseComponentContext;
+    itemId: number;
     headerText: string;
-    frameUrl: string;
+
 }
 import "@pnp/sp/webs";
 import "@pnp/sp/lists";
@@ -24,6 +29,9 @@ import { IFileAddResult } from '@pnp/sp/files';
 export interface IAttachmentPanelV2State {
 
     isOpen: boolean;
+    loading: boolean;
+    frameUrl?: string;
+    message?: MsgReader;
 
 }
 export default class AttachmentPanel extends React.Component<IAttachmentPanelV2Props, IAttachmentPanelV2State> {
@@ -38,94 +46,97 @@ export default class AttachmentPanel extends React.Component<IAttachmentPanelV2P
     // }
     public constructor(props: IAttachmentPanelV2Props) {
         super(props);
-        this.state = { isOpen: true };
+        this.state = { isOpen: true, loading: true };
     }
     public componentDidMount(): void {
-        this.setState({ isOpen: true })
+        this.props.sp.web.lists
+            .getById(this.props.context.pageContext.list.id.toString())
+            .items.getById(this.props.itemId)
+            .file()
+            .then(async (fileInfo) => {
+                const searchParams = new URLSearchParams(window.location.href);
+                const parent = encodeURIComponent(searchParams.get("id"));
+                const frameUrl = `${window.location.origin}${window.location.pathname
+                    }?id=${encodeURIComponent(fileInfo.ServerRelativeUrl)
+                        .split("_")
+                        .join("%5F")
+                        .split(".")
+                        .join("%2E")}&parent=${parent}`;
+                console.log(frameUrl);
+                this.setState((current) => ({ ...current, frameUrl: frameUrl }));
+                debugger;
+                const url = fileInfo.ServerRelativeUrl;
+                const buffer: ArrayBuffer = await this.props.sp.web
+                    .getFileByServerRelativePath(url)
+                    .getBuffer();
+                debugger;
+                const tmpmsg = new MsgReader(buffer);
+                this.setState((current) => ({ ...current, message: tmpmsg, loading: false }));
+
+            })
+            .catch((e) => {
+                debugger;
+            });
     }
+
+
     public render(): React.ReactElement<{}> {
         const itemAlignmentsStackTokens: IStackTokens = {
             childrenGap: 5,
             padding: 10,
         };
-        console.dir(this.props.message.getFileData());
-        const columns: IColumn[] = [
-            {
-                key: "fileName",
-                name: "fileName",
-                minWidth: 300,
-                onRender: (item?: FieldsData, index?: number, column?: IColumn) => {
-                    //return item.fileName
-                    return <Link
-                        onClick={async (e) => {
-                            const att = this.props.message.getAttachment(item);
-                            console.log(att);
-                            const folder = await this.props.sp.web.lists.getByTitle("TemporaryEmailAttachments").rootFolder();
-                            console.log(folder);
-                            const addResult: IFileAddResult = await this.props.sp.web.getFolderByServerRelativePath(folder.ServerRelativeUrl).files.addUsingPath(
-                                folder.ServerRelativeUrl + "/" + att.fileName, att.content, { Overwrite: true });
-                            console.log(addResult);
-
-
-                        }}
-                    >{item.fileName}</Link>
-
-                }
-            },
-            {
-                key: "contentLength",
-                name: "contentLength",
-                minWidth: 100,
-                onRender: (item?: FieldsData, index?: number, column?: IColumn) => {
-                    return item.contentLength
-                }
-            }
-
-        ];
         debugger;
+        let att;
+        if (this.state.message) {
+            att = this.state.message.getFileData().attachments
+                .filter(item => {
 
-        const toEmails = this.props.message.getFileData().recipients
-            .filter(r => r.recipType === "to")
-            .map(r => `${r.name} <${r.smtpAddress}>`)
-            .join(" ");
+                    return !item.attachmentHidden
+                }).map(att => {
+                    return (
+                        <StackItem>
+                            <DefaultButton className='ms-bgColor-themeLight'
+                                onClick={async (e) => {
+                                    debugger;
+                                    console.log(att);
+                                    const attchment = this.state.message.getAttachment(att);
+                                    const folder = await this.props.sp.web.lists
+                                    .getByTitle("TemporaryEmailAttachments")
+                                    .rootFolder() .catch(e => {
+                                        alert(e);
+                                    });
+                                    if (!folder){return;}
+                                    console.log(folder);
+                                    const filename = encodeURIComponent(attchment.fileName);
+                                    const addResult: IFileAddResult | void = await this.props.sp.web
+                                        .getFolderByServerRelativePath(folder.ServerRelativeUrl)
+                                        .files.addUsingPath(
+                                            folder.ServerRelativeUrl + "/" + filename, attchment.content, { Overwrite: true })
+                                        .catch(e => {
+                                            alert(e);
+                                        })
+                                        ;
+                                    if (addResult) {
+                                       debugger;
+                                        console.log(addResult.data.ServerRelativeUrl);
+                                        const newUrl=`${window.location.origin}${this.props.context.pageContext.web.serverRelativeUrl}/TemporaryEmailAttachments/Forms/AllItems.aspx?id=${encodeURIComponent(addResult.data.ServerRelativeUrl)}&parent=${encodeURIComponent(folder.ServerRelativeUrl)}`;
+                                        console.log(newUrl);
+                                        //window.location.pathname = addResult.data.ServerRelativeUrl;
 
-        const ccEmails = this.props.message.getFileData().recipients
-            .filter(r => r.recipType === "cc")
-            .map(r => `${r.name} <${r.smtpAddress}>`)
-            .join(" ");
+                                        
+                                        const opts = `width=${window.innerWidth - 100},height=${window.innerHeight - 100},top=${window.screenTop + 50},left=${window.screenLeft + 50},toolbar=0,location=0`;
+                                        window.open(newUrl, filename, opts);
+                                    }
 
-        const att = this.props.message.getFileData().attachments
-            .filter(item => {
+                                }}>
+                                {att.name}
+                            </DefaultButton>
+                        </StackItem>
 
-                return !item.attachmentHidden
-            }).map(att => {
-                return (
-                    <StackItem>
-                        <DefaultButton className='ms-bgColor-themeLight'
-                            onClick={async (e) => {
-                                debugger;
-                                console.log(att);
-                                const attchment = this.props.message.getAttachment(att);
-                                const folder = await this.props.sp.web.lists.getByTitle("TemporaryEmailAttachments").rootFolder();
-                                console.log(folder);
-                                const filename = encodeURIComponent(attchment.fileName);
-                                const addResult: IFileAddResult = await this.props.sp.web
-                                    .getFolderByServerRelativePath(folder.ServerRelativeUrl)
-                                    .files.addUsingPath(
-                                        folder.ServerRelativeUrl + "/" + filename, attchment.content, { Overwrite: true });
-                                console.log(addResult);
-                                console.log(addResult.data.ServerRelativeUrl);
-                                //window.location.pathname = addResult.data.ServerRelativeUrl;
-                                const opts = `width=${window.innerWidth - 100},height=${window.innerHeight - 100},top=${window.screenTop + 50},left=${window.screenLeft + 50},toolbar=0,location=0`;
-                                window.open(addResult.data.ServerRelativeUrl, filename, opts);
+                    )
+                });
+        }
 
-                            }}>
-                            {att.fileName}
-                        </DefaultButton>
-                    </StackItem>
-
-                )
-            });
         return (<Panel
             isLightDismiss={true}
             isOpen={this.state.isOpen}
@@ -136,11 +147,13 @@ export default class AttachmentPanel extends React.Component<IAttachmentPanelV2P
             type={PanelType.large}
 
         >
-
+            {
+                this.state.loading && <Spinner label="Getting list data" size={SpinnerSize.medium} />
+            }
             <Stack horizontal tokens={itemAlignmentsStackTokens} disableShrink={false} wrap={true}>
                 {att}
             </Stack>
-            <iframe src={this.props.frameUrl} height={window.innerHeight*.7} width={window.innerWidth * .7}  />
+            <iframe src={this.state.frameUrl} height={window.innerHeight * .7} width={window.innerWidth * .7} />
             {/* <table>
                 <tbody>
                     <tr>

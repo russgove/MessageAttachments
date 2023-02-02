@@ -4,7 +4,7 @@
     "https": true,
     "serveConfigurations": {
         "default": {
-            "pageUrl": "https://tronoxglobal.sharepoint.com/sites/AMEROTD/AMER%20Customer%20Data/Forms/AllItems.aspx",
+            "pageUrl": "https://tronoxglobal.sharepoint.com/sites/AMEROTD3/AMER%20Customer%20DataFULL",
             "customActions": {
                 "fda03c76-929a-42a6-8399-9d513e76c358": {
                     "location": "ClientSideExtension.ListViewCommandSet.CommandBar",

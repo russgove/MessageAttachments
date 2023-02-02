@@ -22,11 +22,7 @@ import * as ReactDOM from "react-dom";
  * it will be deserialized into the BaseExtension.properties object.
  * You can define an interface to describe it.
  */
-export interface IMessageAttachmentsCommandSetProperties {
-  // This is an example; replace with your own properties
-  sampleTextOne: string;
-  sampleTextTwo: string;
-}
+export interface IMessageAttachmentsCommandSetProperties {}
 
 const LOG_SOURCE: string = "MessageAttachmentsCommandSet";
 
@@ -40,6 +36,10 @@ export default class MessageAttachmentsCommandSet extends BaseListViewCommandSet
       this,
       this._onListViewStateChanged
     );
+    const viewAttachmentsCommand: Command = this.tryGetCommand("VIEW_ATTACHMENTS");
+    if (viewAttachmentsCommand) {
+      viewAttachmentsCommand.visible=false;
+    }
     return Promise.resolve();
   }
 
@@ -59,62 +59,33 @@ export default class MessageAttachmentsCommandSet extends BaseListViewCommandSet
   private async viewAttachments(
     event: IListViewCommandSetExecuteEventParameters
   ): Promise<void> {
-    const itemId = event.selectedRows[0].getValueByName("ID");
-    this.sp.web.lists
-      .getById(this.context.pageContext.list.id.toString())
-      .items.getById(parseInt(itemId))
-      .file()
-      .then(async (fileInfo) => {
-        const searchParams = new URLSearchParams(window.location.href);
-        const parent = encodeURIComponent(searchParams.get("id"));
-        const viewid = searchParams.get("viewid");
-        // alert(window.location.origin+parent+viewid);
-        const frameUrl = `${window.location.origin}${
-          window.location.pathname
-        }?id=${encodeURIComponent(fileInfo.ServerRelativeUrl)
-          .split("_")
-          .join("%5F")
-          .split(".")
-          .join("%2E")}&parent=${parent}`;
-        console.log(frameUrl);
-        debugger;
-        const url = fileInfo.ServerRelativeUrl;
-        const buffer: ArrayBuffer = await this.sp.web
-          .getFileByServerRelativePath(url)
-          .getBuffer();
-        debugger;
-    
-        const messgage = new MsgReader(buffer);
         const div = document.createElement("div");
-
         const element: React.ReactElement<{}> = React.createElement(
           AttachmentPanelV2,
           {
-            message: messgage,
+            context: this.context,
+            itemId: parseInt(event.selectedRows[0].getValueByName("ID"), 10),
             sp: this.sp,
             headerText: event.selectedRows[0].getValueByName("FileLeafRef"),
-            frameUrl: frameUrl,
           }
         );
         ReactDOM.render(element, div);
-      })
-      .catch((e) => {
-        debugger;
-      });
+   
   }
   private _onListViewStateChanged = (
     args: ListViewStateChangedEventArgs
   ): void => {
+    debugger;
     Log.info(LOG_SOURCE, "List view state changed");
 
-    const compareOneCommand: Command = this.tryGetCommand("VIEW_ATTACHMENTS");
-    if (compareOneCommand) {
+    const viewAttachmentsCommand: Command = this.tryGetCommand("VIEW_ATTACHMENTS");
+    if (viewAttachmentsCommand) {
       // This command should be hidden unless exactly one row is selected and its a .msg
       if (this.context.listView.selectedRows?.length === 1) {
         const filename: string =
           this.context.listView.selectedRows[0].getValueByName("FileLeafRef");
         const filenameparts = filename.split(".");
-        compareOneCommand.visible = filenameparts.pop().toLowerCase() === "msg";
+        viewAttachmentsCommand.visible = filenameparts.pop().toLowerCase() === "msg";
       }
     }
 
